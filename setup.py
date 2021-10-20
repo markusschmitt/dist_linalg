@@ -4,11 +4,8 @@ import subprocess
 
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
-from setuptools.command.install import install
-from setuptools.command.develop import develop
 
 from Cython.Build import cythonize
-import numpy as np
 
 class my_build_ext(build_ext):
 
@@ -49,4 +46,11 @@ setup(
     ext_modules=cythonize(ext),
     cmdclass={'build_ext': my_build_ext},
     zip_safe=False,
+    install_requires=[
+        'mpi4py',
+        'numpy',
+    ],
+    setup_requires=[
+        'cython',
+    ],
 )
