@@ -1,10 +1,10 @@
-#include "wrappers.hpp"
+#include "wrappers.h"
 
-extern "C" void descinit_(int*, int*, int*, int*, int*, int*, int*, int*, int*, int*);
-extern "C" void blacs_gridexit_(int*);
+void descinit_(int*, int*, int*, int*, int*, int*, int*, int*, int*, int*);
+void blacs_gridexit_(int*);
 
-extern "C" void pdsyev_(char*, char*, int*, double*, int*, int*, int*, double*, double*, int*, int*, int*, double*, int*, int*);
-extern "C" void pzheevd_(char*, char*, int*, cpx*, int*, int*, int*, double*, cpx*, int*, int*, int*, cpx*, int*, double*, int*, int*, int*, int*);
+void pdsyev_(char*, char*, int*, double*, int*, int*, int*, double*, double*, int*, int*, int*, double*, int*, int*);
+void pzheevd_(char*, char*, int*, cpx*, int*, int*, int*, double*, cpx*, int*, int*, int*, cpx*, int*, double*, int*, int*, int*, int*);
 
 
 void eig_sol_backend_real(double* A, double* w, double* V, DistLinalgSetup setup) {
@@ -71,7 +71,7 @@ void eig_sol_backend_complex(cpx* A, double* w, cpx* V, DistLinalgSetup setup) {
 
     pzheevd_(&jobz, &uplo, &setup.matrix_dim, A, &ione, &ione, descA, w, V, &ione, &ione, descA, &workTest, &lwork, &rworkTest, &lrwork, &iworkTest, &liwork, &info);
 
-    lwork = (int) std::real(workTest)+1;
+    lwork = (int) creal(workTest)+1;
     lrwork = (int) rworkTest+1;
     liwork = iworkTest;
 
@@ -80,8 +80,8 @@ void eig_sol_backend_complex(cpx* A, double* w, cpx* V, DistLinalgSetup setup) {
     //std::vector<int> iwork = std::vector<int>(liwork);
     
     cpx* work = (cpx*) malloc(lwork*sizeof(cpx));
-    double* rwork = (double*) malloc(rwork*sizeof(double));
-    int* iwork = (int*) malloc(iwork*sizeof(int));
+    double* rwork = (double*) malloc(lrwork*sizeof(double));
+    int* iwork = (int*) malloc(liwork*sizeof(int));
     
     pzheevd_(&jobz, &uplo, &setup.matrix_dim, A, &ione, &ione, descA, w, V, &ione, &ione, descA, &work[0], &lwork, &rwork[0], &lrwork, &iwork[0], &liwork, &info);
 

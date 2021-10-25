@@ -24,7 +24,8 @@ int init_context(DistLinalgSetup setup) {
 
 DistLinalgSetup init_backend(int matrix_dim, int block_dim, int grid_dim) {
  
-    DistLinalgSetup setup = DistLinalgSetup(matrix_dim, block_dim, grid_dim);
+    //DistLinalgSetup setup = DistLinalgSetup(matrix_dim, block_dim, grid_dim);
+    DistLinalgSetup setup = init_setup(matrix_dim, block_dim, grid_dim, -1, -1, -1, -1, -1, -1, -1);
 
     int ictxt = init_context(setup);
     int izero = 0;
