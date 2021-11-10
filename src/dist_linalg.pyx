@@ -16,7 +16,7 @@ cdef extern from "wrappers.h":
 #        int num_rows, num_cols, start_row, start_col, grid_dim, block_dim, matrix_dim, mpi_comm
 #        DistLinalgSetup() except +
 #        DistLinalgSetup(int, int, int, int, int, int, int, int) except +
-cdef extern from "wrappers.hpp":
+cdef extern from "wrappers.h":
     ctypedef struct DistLinalgSetup:
         int num_rows
         int num_cols
@@ -144,7 +144,6 @@ def eigh(A, PyDistLinalgSetup py_setup):
         Z = np.zeros((setup.num_rows, setup.num_cols), order='F', dtype=dataType)
         w = np.zeros((setup.matrix_dim, ))
       
-        print("Call backend. ", dataType, flush=True) 
         if dataType == np.float64:
             eigh_real(A, w, Z, setup)
 
