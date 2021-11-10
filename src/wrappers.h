@@ -6,8 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <complex.h>
+#include <assert.h>
 
 #define cpx double complex
+
+#define assert_elpa_ok(x) assert(x == ELPA_OK)
 
 typedef struct DistLinalgSetup {
 
@@ -18,6 +21,7 @@ typedef struct DistLinalgSetup {
     int grid_dim;
     int block_dim;
     int matrix_dim;
+    int num_procs;
     int mpi_comm;
     int grid_row_idx;
     int grid_col_idx;
@@ -33,6 +37,7 @@ DistLinalgSetup init_setup(int matrixDim, \
                     int startCol, \
                     int gridRowIdx, \
                     int gridColIdx, \
+                    int numProcs, \
                     int mpiComm);
 
 int init_context(DistLinalgSetup setup);

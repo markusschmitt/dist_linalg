@@ -4,9 +4,9 @@ import numpy as np
 from mpi4py import MPI
 from math import floor
 
-cdef extern from "wrappers.hpp":
+cdef extern from "wrappers.h":
 
-    DistLinalgSetup init_setup(int, int, int, int, int, int, int, int, int, int)
+    DistLinalgSetup init_setup(int, int, int, int, int, int, int, int, int, int, int)
     DistLinalgSetup init_backend(int, int, int)
     void eig_sol_backend_real(double*, double*, double*, DistLinalgSetup)
     void eig_sol_backend_complex(double complex*, double*, double complex*, DistLinalgSetup)
@@ -25,6 +25,7 @@ cdef extern from "wrappers.hpp":
         int grid_dim
         int block_dim
         int matrix_dim
+        int num_procs
         int mpi_comm
         int grid_row_idx
         int grid_col_idx
@@ -35,9 +36,9 @@ cdef class PyDistLinalgSetup:
 
     cdef DistLinalgSetup ptr
 
-    def __init__(self, int matrixDim, int blockDim, int gridDim, int numRows=-1, int numCols=-1, int startRow=-1, int startCol=-1, int gridRowIdx=-1, int gridColIdx=-1):
+    def __init__(self, int matrixDim, int blockDim, int gridDim, int numProcs, int numRows=-1, int numCols=-1, int startRow=-1, int startCol=-1, int gridRowIdx=-1, int gridColIdx=-1):
 
-        self.ptr = init_setup(matrixDim, blockDim, gridDim, numRows, numCols, startRow, startCol, gridRowIdx, gridColIdx, MPI.COMM_WORLD.py2f())
+        self.ptr = init_setup(matrixDim, blockDim, gridDim, numRows, numCols, startRow, startCol, gridRowIdx, gridColIdx, numProcs, MPI.COMM_WORLD.py2f())
 
 #    def __del__(self):
 #        if self.ptr != NULL:
@@ -97,6 +98,12 @@ cdef class PyDistLinalgSetup:
         def __set__(self, int val):
             self.ptr.grid_col_idx = val
     
+    property num_procs:
+        def __get__(self):
+            return self.ptr.num_procs
+        def __set__(self, int val):
+            self.ptr.num_procs = val
+    
     property mpi_comm:
         def __get__(self):
             return self.ptr.mpi_comm
@@ -104,12 +111,12 @@ cdef class PyDistLinalgSetup:
             self.ptr.mpi_comm = val
 
 
-def init(int matrix_dim, int block_dim, int grid_dim):
+def init(int matrix_dim, int block_dim, int grid_dim, int numProcs):
  
     #return init_backend(matrix_dim, block_dim, grid_dim)
     cdef DistLinalgSetup setup = init_backend(matrix_dim, block_dim, grid_dim)
 
-    return PyDistLinalgSetup(setup.matrix_dim, setup.block_dim, setup.grid_dim, setup.num_rows, setup.num_cols, setup.start_row, setup.start_col, setup.grid_row_idx, setup.grid_col_idx)
+    return PyDistLinalgSetup(setup.matrix_dim, setup.block_dim, setup.grid_dim, numProcs, setup.num_rows, setup.num_cols, setup.start_row, setup.start_col, setup.grid_row_idx, setup.grid_col_idx)
 
 
 cdef eigh_real(double[::1,:] A, double[::1] w, double[::1,:] Z, DistLinalgSetup setup):
@@ -124,24 +131,31 @@ cdef eigh_complex(double complex[::1,:] A, double[::1] w, double complex[::1,:] 
 
 def eigh(A, PyDistLinalgSetup py_setup):
 
-    cdef DistLinalgSetup setup = init_setup(py_setup.matrix_dim, py_setup.block_dim, py_setup.grid_dim, py_setup.num_rows, py_setup.num_cols, py_setup.start_row, py_setup.start_col, py_setup.grid_row_idx, py_setup.grid_col_idx, py_setup.mpi_comm)
-#def eigh(A, DistLinalgSetup setup):
 
-    if not A.flags['F_CONTIGUOUS']:
-        A = np.asfortranarray(A)
+    cdef DistLinalgSetup setup = init_setup(py_setup.matrix_dim, py_setup.block_dim, py_setup.grid_dim, py_setup.num_rows, py_setup.num_cols, py_setup.start_row, py_setup.start_col, py_setup.grid_row_idx, py_setup.grid_col_idx, py_setup.num_procs, py_setup.mpi_comm)
+    #def eigh(A, DistLinalgSetup setup):
+    if MPI.COMM_WORLD.rank < py_setup.num_procs:
 
-    dataType = A.dtype
+        if not A.flags['F_CONTIGUOUS']:
+            A = np.asfortranarray(A)
 
-    Z = np.zeros((setup.num_rows, setup.num_cols), order='F', dtype=dataType)
-    w = np.zeros((setup.matrix_dim, ))
-   
-    if dataType == np.float64:
-        eigh_real(A, w, Z, setup)
+        dataType = A.dtype
 
-    if dataType == np.cdouble:
-        eigh_complex(A, w, Z, setup)
+        Z = np.zeros((setup.num_rows, setup.num_cols), order='F', dtype=dataType)
+        w = np.zeros((setup.matrix_dim, ))
+      
+        print("Call backend. ", dataType, flush=True) 
+        if dataType == np.float64:
+            eigh_real(A, w, Z, setup)
 
-    return w, Z
+        if dataType == np.cdouble:
+            eigh_complex(A, w, Z, setup)
+
+        return w, Z
+
+    else:
+
+        return None, None
 
 
 def distribute(matrix_dim, num_processes=None):
@@ -159,4 +173,4 @@ def distribute(matrix_dim, num_processes=None):
 
     block_dim = (matrix_dim + grid_dim - 1) // grid_dim
 
-    return init(matrix_dim, block_dim, grid_dim)
+    return init(matrix_dim, block_dim, grid_dim, num_processes)

@@ -15,6 +15,7 @@ DistLinalgSetup init_setup(int matrixDim, \
                     int startCol, \
                     int gridRowIdx, \
                     int gridColIdx, \
+                    int numProcs, \
                     int mpiComm) {
         DistLinalgSetup setup = {
                                     .matrix_dim = matrixDim, \
@@ -26,6 +27,7 @@ DistLinalgSetup init_setup(int matrixDim, \
                                     .start_col = startCol, \
                                     .grid_row_idx = gridRowIdx, \
                                     .grid_col_idx = gridColIdx, \
+                                    .num_procs = numProcs, \
                                     .mpi_comm = mpiComm
                                 };
         return setup;
@@ -50,7 +52,7 @@ int init_context(DistLinalgSetup setup) {
 DistLinalgSetup init_backend(int matrix_dim, int block_dim, int grid_dim) {
  
     //DistLinalgSetup setup = DistLinalgSetup(matrix_dim, block_dim, grid_dim);
-    DistLinalgSetup setup = init_setup(matrix_dim, block_dim, grid_dim, -1, -1, -1, -1, -1, -1, -1);
+    DistLinalgSetup setup = init_setup(matrix_dim, block_dim, grid_dim, -1, -1, -1, -1, -1, -1, -1, -1);
 
     int ictxt = init_context(setup);
     int izero = 0;
@@ -65,7 +67,7 @@ DistLinalgSetup init_backend(int matrix_dim, int block_dim, int grid_dim) {
     setup.start_col = gridColIdx * block_dim;
 
     setup.grid_row_idx = gridRowIdx;
-    setup.grid_col_idx = gridRowIdx;
+    setup.grid_col_idx = gridColIdx;
 
     blacs_gridexit_(&ictxt);
 
